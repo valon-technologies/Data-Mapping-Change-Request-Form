@@ -250,8 +250,8 @@ function updateStats(submissions) {
 
 async function loadSubmissions() {
   try {
-    const res = await window.storage.get('submissions', true);
-    allSubmissions = res ? JSON.parse(res.value) : [];
+    const existing = localStorage.getItem('valon_submissions');
+    allSubmissions = existing ? JSON.parse(existing) : [];
   } catch(e) {
     allSubmissions = [];
   }
