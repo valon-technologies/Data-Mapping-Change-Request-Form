@@ -473,6 +473,9 @@ document.getElementById('changeRequestForm').addEventListener('submit', async fu
     source_field:  document.getElementById('sourceField').value.trim(),
     vos_entity:   document.getElementById('vosEntity').value.trim(),
     vos_field:    document.getElementById('vosField').value.trim(),
+    attached_files: document.getElementById('fileInput').files.length
+      ? Array.from(document.getElementById('fileInput').files).map(f => f.name).join(', ')
+      : 'None',
   };
 
   // Save to localStorage
