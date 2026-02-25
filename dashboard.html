@@ -75,6 +75,28 @@
     .expand-chevron { transition: transform 0.2s; display: inline-block; color: var(--muted); }
     tr.expanded .expand-chevron { transform: rotate(180deg); }
 
+    /* Delete button */
+    .delete-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: rgba(192,57,43,0.08); color: var(--error); border: 1px solid rgba(192,57,43,0.2); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .delete-btn:hover { background: rgba(192,57,43,0.15); border-color: rgba(192,57,43,0.4); }
+
+    /* Modal overlay */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(13,31,60,0.55); backdrop-filter: blur(3px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 14px; padding: 36px 32px; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(13,31,60,0.2); animation: modalIn 0.2s ease; }
+    @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-icon { width: 52px; height: 52px; background: rgba(192,57,43,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; }
+    .modal h3 { font-family: 'DM Serif Display', serif; font-size: 1.25rem; color: var(--navy); text-align: center; margin-bottom: 8px; }
+    .modal p { font-size: 0.86rem; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 20px; }
+    .modal-name { font-weight: 600; color: var(--text); }
+    .modal input[type="password"] { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.18s; margin-bottom: 8px; }
+    .modal input[type="password"]:focus { border-color: var(--steel); }
+    .modal-error { font-size: 0.78rem; color: var(--error); margin-bottom: 14px; min-height: 18px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-cancel { flex: 1; padding: 10px; background: #f1f3f7; color: var(--muted); border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    .modal-cancel:hover { background: var(--border); }
+    .modal-confirm { flex: 1; padding: 10px; background: var(--error); color: #fff; border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .modal-confirm:hover { background: #a93226; }
+
     /* Empty state */
     .empty { text-align: center; padding: 64px 24px; }
     .empty svg { opacity: 0.2; margin: 0 auto 16px; display: block; }
@@ -140,8 +162,28 @@
 
 <div class="footer">Valon Data Mapping · Read-only view</div>
 
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#c0392b" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </div>
+    <h3>Delete Submission</h3>
+    <p>You are about to delete the request from <span class="modal-name" id="modalName"></span>. Enter the admin password to confirm.</p>
+    <input type="password" id="deletePassword" placeholder="Enter password…" />
+    <div class="modal-error" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let allSubmissions = [];
+let pendingDeleteId = null;
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -199,6 +241,10 @@ function renderTable(submissions) {
             <div class="expand-field"><label>Submitted</label><span>${formatDate(s.submitted_at)}</span></div>
             <div class="expand-field full"><label>Description</label><div class="expand-desc">${escHtml(s.description)}</div></div>
           </div>
+          <button class="delete-btn" onclick="event.stopPropagation(); openModal('${s.id}', '${escHtml(s.first_name)} ${escHtml(s.last_name)}')">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Delete Request
+          </button>
         </div>
       </td>
     </tr>`;
@@ -247,6 +293,46 @@ function updateStats(submissions) {
   document.getElementById('stat-high').textContent = submissions.filter(s => s.priority === 'High').length;
   document.getElementById('stat-today').textContent = submissions.filter(s => new Date(s.submitted_at).toDateString() === today).length;
 }
+
+function openModal(id, name) {
+  pendingDeleteId = id;
+  document.getElementById('modalName').textContent = name;
+  document.getElementById('deletePassword').value = '';
+  document.getElementById('modalError').textContent = '';
+  document.getElementById('deleteModal').classList.add('open');
+  setTimeout(() => document.getElementById('deletePassword').focus(), 100);
+}
+
+function closeModal() {
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').classList.remove('open');
+}
+
+function confirmDelete() {
+  const pwd = document.getElementById('deletePassword').value;
+  if (pwd !== 'ValonFDA') {
+    document.getElementById('modalError').textContent = 'Incorrect password. Please try again.';
+    document.getElementById('deletePassword').value = '';
+    document.getElementById('deletePassword').focus();
+    return;
+  }
+  // Remove from array and save
+  allSubmissions = allSubmissions.filter(s => s.id !== pendingDeleteId);
+  localStorage.setItem('valon_submissions', JSON.stringify(allSubmissions));
+  closeModal();
+  updateStats(allSubmissions);
+  filterAndRender();
+}
+
+// Close modal on overlay click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Allow Enter key to confirm
+document.getElementById('deletePassword').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') confirmDelete();
+});
 
 async function loadSubmissions() {
   try {
