@@ -232,8 +232,8 @@
       <div class="field-group">
         <label>Upload supporting files <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
         <div class="drive-section">
-          <p class="drive-hint">Click the button below to open the secure shared folder, then drag and drop your files in. Once uploaded, enter the filename(s) in the field below.</p>
-          <a id="driveFolderBtn" class="drive-btn" href="https://drive.google.com/drive/u/0/folders/1dzSOxo7xhLgyHfucIlwlZUS1h_eP69Ls" target="_blank" rel="noopener noreferrer">
+          <p class="drive-hint">Click the button below to open the secure shared folder in a small window, then drag and drop your files in. Once done, come back here and submit your request.</p>
+          <button type="button" id="driveFolderBtn" class="drive-btn" onclick="openDriveFolder()">
             <svg width="16" height="16" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066DA"/>
               <path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.45 0c-1.55 0-3.1.4-4.45 1.2L7.2 24.7 0 37.4h27.5l16.15-12.4z" fill="#00AC47"/>
@@ -243,8 +243,15 @@
               <path d="M73.4 26.5l-6.7-11.6c-.8-1.4-1.95-2.5-3.3-3.3L49.65 35l10.15 18H87.3c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
             </svg>
             Open Secure Upload Folder
-          </a>
-          <div>
+          </button>
+
+          <!-- Reminder banner — shown after clicking Drive button -->
+          <div id="driveReminder" style="display:none;margin-top:12px;padding:12px 16px;background:#fff8e6;border:1.5px solid #e8a020;border-radius:8px;display:none;align-items:center;gap:10px;">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#e8a020" stroke-width="2" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <p style="margin:0;font-size:0.84rem;color:#7a5200;line-height:1.5;"><strong>Don't forget!</strong> After uploading your files, come back to this form and click <strong>Submit Request</strong> to complete your submission.</p>
+          </div>
+
+          <div style="margin-top:14px;">
             <label for="fileNames" style="font-size:0.82rem;font-weight:500;color:var(--text);margin-bottom:6px;display:block;">
               Filename(s) uploaded <span style="font-weight:400;color:var(--muted);">(optional — enter names of files you uploaded)</span>
             </label>
@@ -431,6 +438,23 @@ function updateFieldHint() {
 document.getElementById('vosField').addEventListener('focus', updateFieldHint);
 
 // ─── File input ────────────────────────────────────────────────────────────────
+// ─── Google Drive popup ────────────────────────────────────────────────────────
+function openDriveFolder() {
+  const url = 'https://drive.google.com/drive/u/0/folders/1dzSOxo7xhLgyHfucIlwlZUS1h_eP69Ls';
+  const w = 900, h = 650;
+  const left = Math.max(0, (screen.width - w) / 2);
+  const top  = Math.max(0, (screen.height - h) / 2);
+  const popup = window.open(url, 'driveUpload',
+    `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`);
+  // Show reminder banner whether popup succeeded or was blocked
+  const banner = document.getElementById('driveReminder');
+  banner.style.display = 'flex';
+  // If popup was blocked, fall back to new tab
+  if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+    window.open(url, '_blank');
+  }
+}
+
 // ─── Validation ────────────────────────────────────────────────────────────────
 function setInvalid(id) { document.getElementById(id)?.classList.add('invalid'); }
 function setValid(id)   { document.getElementById(id)?.classList.remove('invalid'); }
