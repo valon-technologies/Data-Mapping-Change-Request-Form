@@ -494,32 +494,18 @@ document.getElementById('changeRequestForm').addEventListener('submit', async fu
     } catch(e) { console.error('Storage error:', e); }
   }
 
-  // Submit to Zapier via hidden form POST (avoids CORS issues)
-  function postToZapier(params) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://hooks.zapier.com/hooks/catch/26501232/u0u3u7q/';
-    form.target = 'zapier_iframe';
-    form.style.display = 'none';
-    Object.entries(params).forEach(([key, val]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = val;
-      form.appendChild(input);
+  // Send to Zapier using no-cors fetch (correct approach for static sites)
+  try {
+    await fetch('https://hooks.zapier.com/hooks/catch/26501232/u0u3u7q/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      mode: 'no-cors',
+      body: new URLSearchParams(templateParams).toString()
     });
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(() => document.body.removeChild(form), 3000);
+  } catch(err) {
+    console.error('Zapier error:', err);
   }
 
-  // Hidden iframe so the POST doesn't navigate away
-  const iframe = document.createElement('iframe');
-  iframe.name = 'zapier_iframe';
-  iframe.style.display = 'none';
-  document.body.appendChild(iframe);
-
-  postToZapier(templateParams);
   await saveSubmission();
   window.location.href = 'thankyou.html';
 });
