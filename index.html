@@ -435,7 +435,7 @@ function setValid(id)   { document.getElementById(id)?.classList.remove('invalid
   });
 });
 
-document.getElementById('changeRequestForm').addEventListener('submit', function(e) {
+document.getElementById('changeRequestForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   let valid = true;
 
@@ -494,21 +494,34 @@ document.getElementById('changeRequestForm').addEventListener('submit', function
     } catch(e) { console.error('Storage error:', e); }
   }
 
-  fetch('https://hooks.zapier.com/hooks/catch/26501232/u02jabu/', {
-    method: 'POST',
-    body: JSON.stringify(templateParams)
-  })
-    .then(async (res) => {
-      if (!res.ok) throw new Error('Webhook returned status ' + res.status);
-      await saveSubmission();
-      window.location.href = 'thankyou.html';
-    })
-    .catch(async (err) => {
-      console.error('Zapier webhook error:', err);
-      btn.textContent = 'Submit Request';
-      btn.disabled = false;
-      alert('There was a problem submitting your request. Please check your connection and try again.\n\nError: ' + err.message);
+  // Submit to Zapier via hidden form POST (avoids CORS issues)
+  function postToZapier(params) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://hooks.zapier.com/hooks/catch/26501232/u02jabu/';
+    form.target = 'zapier_iframe';
+    form.style.display = 'none';
+    Object.entries(params).forEach(([key, val]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = val;
+      form.appendChild(input);
     });
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => document.body.removeChild(form), 3000);
+  }
+
+  // Hidden iframe so the POST doesn't navigate away
+  const iframe = document.createElement('iframe');
+  iframe.name = 'zapier_iframe';
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  postToZapier(templateParams);
+  await saveSubmission();
+  window.location.href = 'thankyou.html';
 });
 </script>
 
