@@ -58,11 +58,12 @@
     .priority-urgent:has(input:checked) { background:#c0392b; border-color:#c0392b; }
 
     /* File upload */
-    .file-drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 20px; text-align: center; color: var(--muted); font-size: 0.85rem; cursor: pointer; transition: border-color 0.18s, background 0.18s; position: relative; }
-    .file-drop:hover { border-color: var(--steel); background: rgba(42,74,127,0.03); }
-    .file-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .file-drop svg { display: block; margin: 0 auto 10px; opacity: 0.45; }
-    .file-cta { font-weight: 500; color: var(--steel); }
+    /* Google Drive upload */
+    .drive-section { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; background: #fff; }
+    .drive-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--navy); color: #fff; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600; border: none; border-radius: 30px; cursor: pointer; text-decoration: none; transition: background 0.15s; margin-bottom: 14px; }
+    .drive-btn:hover { background: var(--steel); }
+    .drive-btn svg { flex-shrink: 0; }
+    .drive-hint { font-size: 0.78rem; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
     #file-name { margin-top: 8px; font-size: 0.8rem; color: var(--success); font-weight: 500; }
 
     /* Autocomplete */
@@ -230,14 +231,25 @@
       <div class="section-label">Supporting Files</div>
       <div class="field-group">
         <label>Upload supporting files <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
-        <div class="file-drop" id="fileDrop">
-          <input type="file" id="fileInput" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.png,.jpg" />
-          <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          <div><span class="file-cta">Choose a file</span> or drag and drop</div>
-          <div style="font-size:0.75rem;margin-top:4px;">PDF, Excel, CSV, Word, Images</div>
-          <div id="file-name"></div>
+        <div class="drive-section">
+          <p class="drive-hint">Click the button below to open the secure shared folder, then drag and drop your files in. Once uploaded, enter the filename(s) in the field below.</p>
+          <a id="driveFolderBtn" class="drive-btn" href="GDRIVE_FOLDER_URL" target="_blank" rel="noopener noreferrer">
+            <svg width="16" height="16" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5l5.4 9.35z" fill="#0066DA"/>
+              <path d="M43.65 25L29.9 1.2C28.55.4 27 0 25.45 0c-1.55 0-3.1.4-4.45 1.2L7.2 24.7 0 37.4h27.5l16.15-12.4z" fill="#00AC47"/>
+              <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.9 11.9 7.85 11.9z" fill="#EA4335"/>
+              <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.95 0H34.35c-1.55 0-3.1.4-4.45 1.2L43.65 25z" fill="#00832D"/>
+              <path d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.45 1.2h50.9c1.55 0 3.1-.4 4.45-1.2L59.8 53z" fill="#2684FC"/>
+              <path d="M73.4 26.5l-6.7-11.6c-.8-1.4-1.95-2.5-3.3-3.3L49.65 35l10.15 18H87.3c0-1.55-.4-3.1-1.2-4.5L73.4 26.5z" fill="#FFBA00"/>
+            </svg>
+            Open Secure Upload Folder
+          </a>
+          <div>
+            <label for="fileNames" style="font-size:0.82rem;font-weight:500;color:var(--text);margin-bottom:6px;display:block;">
+              Filename(s) uploaded <span style="font-weight:400;color:var(--muted);">(optional — enter names of files you uploaded)</span>
+            </label>
+            <input type="text" id="fileNames" placeholder="e.g. loan_mapping_v2.xlsx, notes.pdf" />
+          </div>
         </div>
       </div>
 
@@ -419,11 +431,6 @@ function updateFieldHint() {
 document.getElementById('vosField').addEventListener('focus', updateFieldHint);
 
 // ─── File input ────────────────────────────────────────────────────────────────
-document.getElementById('fileInput').addEventListener('change', function() {
-  const el = document.getElementById('file-name');
-  el.textContent = this.files.length ? Array.from(this.files).map(f => f.name).join(', ') : '';
-});
-
 // ─── Validation ────────────────────────────────────────────────────────────────
 function setInvalid(id) { document.getElementById(id)?.classList.add('invalid'); }
 function setValid(id)   { document.getElementById(id)?.classList.remove('invalid'); }
@@ -462,20 +469,18 @@ document.getElementById('changeRequestForm').addEventListener('submit', async fu
   btn.disabled = true;
 
   const templateParams = {
-    first_name:   document.getElementById('firstName').value.trim(),
-    last_name:    document.getElementById('lastName').value.trim(),
-    user_email:   document.getElementById('email').value.trim(),
-    milestone:    document.getElementById('milestone').value,
-    priority:     document.querySelector('input[name="priority"]:checked')?.value || '',
-    change_type:  document.querySelector('input[name="changeType"]:checked')?.value || '',
-    description:  document.getElementById('description').value.trim(),
+    first_name:    document.getElementById('firstName').value.trim(),
+    last_name:     document.getElementById('lastName').value.trim(),
+    user_email:    document.getElementById('email').value.trim(),
+    milestone:     document.getElementById('milestone').value,
+    priority:      document.querySelector('input[name="priority"]:checked')?.value || '',
+    change_type:   document.querySelector('input[name="changeType"]:checked')?.value || '',
+    description:   document.getElementById('description').value.trim(),
     source_entity: document.getElementById('sourceEntity').value.trim(),
     source_field:  document.getElementById('sourceField').value.trim(),
-    vos_entity:   document.getElementById('vosEntity').value.trim(),
-    vos_field:    document.getElementById('vosField').value.trim(),
-    attached_files: document.getElementById('fileInput').files.length
-      ? Array.from(document.getElementById('fileInput').files).map(f => f.name).join(', ')
-      : 'None',
+    vos_entity:    document.getElementById('vosEntity').value.trim(),
+    vos_field:     document.getElementById('vosField').value.trim(),
+    attached_files: document.getElementById('fileNames').value.trim() || 'None',
   };
 
   // Save to localStorage
